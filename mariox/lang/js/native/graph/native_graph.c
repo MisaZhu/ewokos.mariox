@@ -61,13 +61,14 @@ var_t* native_graph_round(vm_t* vm, var_t* env, void* data) {
 	int w = get_int(env, "w");
 	int h = get_int(env, "h");
 	int r = get_int(env, "r");
+	int rw = get_int(env, "rw");
 	int color = get_int(env, "color");
 
 	graph_t* g = (graph_t*)get_raw(env, THIS);
 	if(g == NULL)
 		return NULL;
 
-	graph_round(g, x, y, w, h, r, color);
+	graph_round(g, x, y, w, h, r, rw, color);
 	return NULL;
 }
 
@@ -171,7 +172,7 @@ var_t* native_font_constructor(vm_t* vm, var_t* env, void* data) {
 	const char* name = get_str(env, "name");
 	font_t* font = font_new(name, true);
 
-	var_t* thisV = var_new_obj(vm, font, (free_func_t)free_font);
+	var_t* thisV = var_new_obj(vm, NULL, font, (free_func_t)free_font);
 	var_instance_from(thisV, get_obj(env, THIS));
 	return thisV;
 }
@@ -201,7 +202,7 @@ void reg_native_graph(vm_t* vm) {
 	var_t* cls = vm_new_class(vm, CLS_GRAPH);
 	vm_reg_native(vm, cls, "clear(color)", native_graph_clear, NULL); 
 	vm_reg_native(vm, cls, "fill(x,y,w,h,color)", native_graph_fill, NULL); 
-	vm_reg_native(vm, cls, "round(x,y,w,h,r,color)", native_graph_round, NULL); 
+	vm_reg_native(vm, cls, "round(x,y,w,h,r,rw,color)", native_graph_round, NULL); 
 	vm_reg_native(vm, cls, "fillRound(x,y,w,h,r,color)", native_graph_fillRound, NULL); 
 	vm_reg_native(vm, cls, "box(x,y,w,h,color)", native_graph_box, NULL); 
 	vm_reg_native(vm, cls, "line(x0,y0,x1,y1,color)", native_graph_line, NULL); 

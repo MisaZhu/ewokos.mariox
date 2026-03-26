@@ -9,10 +9,8 @@ MARIOX = .
 include $(MARIOX)/lang/js/lang.mk
 
 mario_OBJS = $(MARIO_VM)/mario/mario.o $(MARIO_VM)/mario/bcdump/bcdump.o
-platform_OBJS = $(MARIO_VM)/platform/platform.o \
-		$(MARIO_VM)/platform/mem.o
 
-lib_OBJS =  $(MARIO_VM)/bin/lib/mbc.o $(MARIO_VM)/bin/lib/js.o bin/lib/vm_json_var.o bin/lib/native_UniObject.o
+lib_OBJS =  $(MARIO_VM)/bin/lib/mbc.o $(MARIO_VM)/bin/lib/js.o $(MARIO_VM)/bin/lib/mem_debug.o bin/lib/vm_json_var.o bin/lib/native_UniObject.o bin/lib/clock_adapter.o
 wjsvm_OBJS = bin/wjs/wjs.o bin/wjs/native_wjs.o $(lib_OBJS)
 mvm_OBJS = $(MARIO_VM)/bin/mario/mario.o $(lib_OBJS)
 
@@ -22,7 +20,7 @@ WJS_OBJS = $(mario_OBJS) $(platform_OBJS) $(wjsvm_OBJS) $(lang_OBJS) \
 MARIO_OBJS = $(mario_OBJS) $(platform_OBJS) $(mvm_OBJS) $(lang_OBJS) \
 		$(NATIVE_OBJS)
 
-ifneq ($(MARIO_DEBUG), no)
+ifneq ($(DEBUG), no)
 CFLAGS += -g -DMARIO_DEBUG
 CXXFLAGS += -g -DMARIO_DEBUG
 else
@@ -41,7 +39,8 @@ CXXFLAGS += -DMARIO_THREAD
 endif
 
 HEADS = \
-	-I$(NATIVE_PATH_BUILTIN) \
+	-I$(NATIVES_PATH_BUILTIN) \
+	-I$(NATIVES_PATH) \
 	-I$(NATIVE_PATH_GRAPH) \
 	-I$(NATIVE_PATH_X) \
 	-I$(MARIO_VM)/mario \
@@ -53,7 +52,7 @@ CFLAGS += $(HEADS)
 CXXFLAGS += $(HEADS)
 
 TARGET_DIR = $(SW_ROOT_DIR)/build/$(HW)/bin
-WJS = $(TARGET_DIR)/wjs
+WJS = $(TARGET_DIR)/x/wjs
 MARIO = $(TARGET_DIR)/mario
 
 all: $(MARIO) $(WJS)
@@ -80,7 +79,7 @@ $(WJS): $(WJS_OBJS) \
 		$(BUILD_DIR)/lib/libfont.a \
 		$(BUILD_DIR)/lib/libwidget++.a \
 		$(BUILD_DIR)/lib/libcxx.a 
-	mkdir -p $(TARGET_DIR)
+	mkdir -p $(TARGET_DIR)/x
 	$(LD) -Ttext=100 $(WJS_OBJS) -o $(WJS) $(LDFLAGS) $(EWOK_LIB_X) $(EWOK_LIB_GRAPH) $(EWOK_LIBC) -lcxx
 
 clean:

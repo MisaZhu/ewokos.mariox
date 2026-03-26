@@ -16,7 +16,7 @@ public:
 	vm_t * vm;
 private:
 	void onMouse(xevent_t* xev) {
-		var_t* arg = var_new_obj(vm, NULL, NULL);
+		var_t* arg = var_new_obj(vm, NULL, NULL, NULL);
 		var_add(arg, "state", var_new_int(vm, xev->state));
 		var_add(arg, "global_x", var_new_int(vm, xev->value.mouse.x));
 		var_add(arg, "global_y", var_new_int(vm, xev->value.mouse.y));
@@ -27,35 +27,25 @@ private:
 		var_add(arg, "x", var_new_int(vm, pos.x));
 		var_add(arg, "y", var_new_int(vm, pos.y));
 
-		var_t* args = var_new(vm);
-		var_add(args, "mouseEvt", arg);
-		call_m_func_by_name(vm, var_win, "onMouse", args);
-		var_unref(args);
+		call_m_func_by_name(vm, var_win, "onMouse", 1, arg);
 	}
 	
 	void onIM(xevent_t* xev) {
-		var_t* arg = var_new_obj(vm, NULL, NULL);
+		var_t* arg = var_new_obj(vm, NULL, NULL, NULL);
 		var_add(arg, "state", var_new_int(vm, xev->state));
 		var_add(arg, "c", var_new_int(vm, xev->value.im.value));
 
-		var_t* args = var_new(vm);
-		var_add(args, "imEvt", arg);
-		call_m_func_by_name(vm, var_win, "onIM", args);
-		var_unref(args);
+		call_m_func_by_name(vm, var_win, "onIM", 1, arg);
 	}
 protected:
-	void onRepaint(graph_t* g) { 
+	void onRepaint(graph_t* g) {
 		var_t* arg_g = new_obj(vm, CLS_GRAPH, 0);
 		arg_g->value = g;
 		arg_g->free_func = free_none;
 		var_add(arg_g, "width", var_new_int(vm, g->w));
 		var_add(arg_g, "height", var_new_int(vm, g->h));
 
-		var_t* args = var_new(vm);
-		var_add(args, "g", arg_g);
-
-		call_m_func_by_name(vm, var_win, "onRepaint", args);
-		var_unref(args);
+		call_m_func_by_name(vm, var_win, "onRepaint", 1, arg_g);
 	}
 
 	void onEvent(xevent_t* xev) {
@@ -71,15 +61,11 @@ protected:
 		xinfo_t xinfo;
 		getInfo(xinfo);
 
-		var_t* arg = var_new_obj(vm, NULL, NULL); 
+		var_t* arg = var_new_obj(vm, NULL, NULL, NULL);
 		var_add(arg, "width", var_new_int(vm, xinfo.wsr.w));
 		var_add(arg, "height", var_new_int(vm, xinfo.wsr.h));
 
-		var_t* args = var_new(vm);
-		var_add(args, "size", arg);
-
-		call_m_func_by_name(vm, var_win, "onResize", args);
-		var_unref(args);
+		call_m_func_by_name(vm, var_win, "onResize", 1, arg);
 	}
 };
 
@@ -152,7 +138,7 @@ var_t* native_xwin_getSize(vm_t* vm, var_t* env, void* data) {
 
 	xinfo_t xinfo;
 	xwin->getInfo(xinfo);
-	var_t* ret = var_new_obj(vm, NULL, NULL);
+	var_t* ret = var_new_obj(vm, NULL, NULL, NULL);
 	var_add(ret, "width", var_new_int(vm, xinfo.wsr.w));
 	var_add(ret, "height", var_new_int(vm, xinfo.wsr.h));
 	return ret;

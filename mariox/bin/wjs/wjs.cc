@@ -4,14 +4,13 @@
 
 #include <x++/X.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <tinyjson/tinyjson.h>
 
 #include "js.h"
 #include "mbc.h"
-#include "platform.h"
 #include "native_UniObject.h"
-#include "mem.h"
 
 /**
 load extra native libs.
@@ -21,7 +20,6 @@ load extra native libs.
 extern "C" {
 #endif
 
-void reg_natives(vm_t* vm);
 void reg_native_wjs(vm_t* vm, void* arg);
 bool js_compile(bytecode_t *bc, const char* input);
 
@@ -32,19 +30,12 @@ static inline var_t* vm_load_var(vm_t* vm, const char* name, bool create) {
 	return NULL;
 }
 
-static inline void vm_load_basic_classes(vm_t* vm) {
-	vm->var_String = vm_load_var(vm, "String", false);
-	vm->var_Array = vm_load_var(vm, "Array", false);
-	vm->var_Number = vm_load_var(vm, "Number", false);
-}
-
+void reg_all_natives(vm_t* vm);
+void reg_mariox_natives(vm_t* vm);
 vm_t* init_js(void) {
-	platform_init();
-	mem_init();
-	vm_t* vm = vm_new(js_compile);
-	vm->gc_buffer_size = 1024;
-	vm_init(vm, reg_natives, NULL);
-	vm_load_basic_classes(vm);
+	vm_t* vm = vm_new(js_compile, 1024, 0);
+	vm_init(vm, reg_all_natives, NULL);
+	reg_mariox_natives(vm);
 	return vm;
 }
 
@@ -63,54 +54,91 @@ bool load_wjs(vm_t* vm, const char* fname) {
 
 void quit_js(vm_t* vm) {
 	vm_close(vm);
-	mem_quit();
 }
 
 #ifdef __cplusplus /* __cplusplus */
 }
 #endif
 
-vm_t* _vm;
+vm_t* _vm = NULL;
+static bool _vm_ready = false;
 
 using namespace Ewok;
 #define CLS_Widget "Widget"
 
 static void onMenuItemFunc(MenuItem* it, void* data) {
+	(void)it;
+	(void)data;
+	// 完全忽略事件，直到 VM 准备就绪
+	if(!_vm_ready || _vm == NULL) {
+		return;
+	}
+	
 	vm_t* vm = _vm;
-	var_t* args = var_new(vm);
-	var_add(args, "menuID", var_new_int(vm, it->id));
-	call_m_func_by_name(_vm, NULL, "_onMenuItemEvent", args);
-	var_unref(args);
+	klog("onMenuItemFunc: %d\n", it->id);
+	var_t* ret = call_m_func_by_name(_vm, NULL, "_onMenuItemEvent", 1, var_new_int(vm, it->id));
+	if(ret != NULL) {
+		var_unref(ret);
+	}
 }
 
+#ifdef __cplusplus /* __cplusplus */
+extern "C" {
+#endif
+
 static void onEventFunc(Widget* wd, xevent_t* xev, void* arg) {
+	klog("onEventFunc: 0x%x, 0x%x\n", wd, arg);
+	(void)arg;
+	// 完全忽略事件，直到 VM 准备就绪
+	if(!_vm_ready || _vm == NULL) {
+		return;
+	}
+
+	// 验证事件指针有效性
+	if(xev == NULL) {
+		return;
+	}
+
+	// 验证事件类型有效性，防止非法事件类型导致崩溃
+	if(xev->type >= XEVT_WIN) {
+		return;
+	}
+
+	// 验证 Widget 指针有效性，防止使用无效的 Widget 指针导致崩溃
+	if(wd == NULL) {
+		return;
+	}
+
 	vm_t* vm = _vm;
-	
-	var_t* evt_arg = var_new_obj(vm, NULL, NULL);
+
+	var_t* evt_arg = var_new_obj(vm, NULL, NULL, NULL);
 	var_add(evt_arg, "type", var_new_int(vm, xev->type));
 	var_add(evt_arg, "state", var_new_int(vm, xev->state));
 
-	var_t* mouse_arg = var_new_obj(vm, NULL, NULL);
+	var_t* mouse_arg = var_new_obj(vm, NULL, NULL, NULL);
 	var_add(mouse_arg, "x", var_new_int(vm, xev->value.mouse.x));
 	var_add(mouse_arg, "y", var_new_int(vm, xev->value.mouse.y));
 	var_add(mouse_arg, "rx", var_new_int(vm, xev->value.mouse.rx));
 	var_add(mouse_arg, "ry", var_new_int(vm, xev->value.mouse.ry));
 	var_add(evt_arg, "mouse", mouse_arg);
 
-	var_t* im_arg = var_new_obj(vm, NULL, NULL);
+	var_t* im_arg = var_new_obj(vm, NULL, NULL, NULL);
 	var_add(im_arg, "value", var_new_int(vm, xev->value.im.value));
 	var_add(evt_arg, "im", im_arg);
 
-	var_t* args = var_new(vm);
 	var_t* var_wd = new_obj(vm, CLS_Widget, 0);
 	var_wd->value = wd;
 	var_wd->free_func = free_none;
-	var_add(args, "widget", var_wd);
-	var_add(args, "event", evt_arg);
 
-	call_m_func_by_name(_vm, NULL, "_onWidgetEvent", args);
-	var_unref(args);
+	var_t* ret = call_m_func_by_name(_vm, NULL, "_onWidgetEvent", 2, var_wd, evt_arg);
+	if(ret != NULL) {
+		var_unref(ret);
+	}
 }
+
+#ifdef __cplusplus /* __cplusplus */
+}
+#endif
 
 static int doargs(int argc, char* argv[]) {
 	int c = 0;
@@ -121,7 +149,7 @@ static int doargs(int argc, char* argv[]) {
 
 		switch (c) {
 		case 'd':
-			_m_debug = true;
+			// debug mode
 			break;
 		case '?':
 			return -1;
@@ -137,7 +165,7 @@ static bool loadWJS(const string& wjs_fname, string& layout_fname, string& js_fn
     json_var_t* conf_var = json_parse_file(wjs_fname.c_str());
     if(conf_var == NULL)
         return false;
-		
+	
 	layout_fname = json_get_str(conf_var, "layout");
 	js_fname = json_get_str(conf_var, "js");
     
@@ -145,8 +173,19 @@ static bool loadWJS(const string& wjs_fname, string& layout_fname, string& js_fn
     return true;
 }
 
+static void out(const char* str) {
+    slog("%s", str);
+}
+
+void platform_init(void) {
+	_platform_malloc = (void* (*)(uint32_t))malloc;
+	_platform_free = free;
+    _platform_out = out;
+}
 
 int main(int argc, char** argv) {
+	platform_init();
+
 	int argind = doargs(argc, argv);
 	if(argind < 0) {
 		return -1;
@@ -171,15 +210,33 @@ int main(int argc, char** argv) {
 	X x;
 	LayoutWin win;
 	LayoutWidget* layout = win.getLayoutWidget();
+	klog("1 layout: 0x%x\n", layout);
 
+	// 步骤 1：初始化 VM
 	_vm = init_js();
+	if(_vm == NULL) {
+		slog("Failed to initialize VM\n");
+		return -1;
+	}
+
+	// 步骤 2：注册 natives 和加载 JS
 	reg_native_wjs(_vm, layout);
-	load_wjs(_vm, js_fname.c_str());
+	if(!load_wjs(_vm, js_fname.c_str())) {
+		slog("Failed to load JS file: %s\n", js_fname.c_str());
+		return -1;
+	}
 	vm_run(_vm);
 
+	// 步骤 3：标记 VM 准备就绪
+	_vm_ready = true;
+
+	// 步骤 4：现在才设置事件回调
+	klog("2 layout: 0x%x\n", layout);
 	layout->setMenuItemFunc(onMenuItemFunc);
 	layout->setEventFunc(onEventFunc);
+	klog("3 layout: 0x%x\n", layout);
 
+	// 步骤 5：加载配置和打开窗口
 	win.loadConfig(layout_fname.c_str()); // 加载布局文件
 	win.open(&x, -1, -1, -1, 0, 0, argv[1], XWIN_STYLE_NORMAL);
 	win.setTimer(16);
