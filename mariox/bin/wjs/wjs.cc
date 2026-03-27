@@ -33,7 +33,7 @@ static inline var_t* vm_load_var(vm_t* vm, const char* name, bool create) {
 void reg_all_natives(vm_t* vm);
 void reg_mariox_natives(vm_t* vm);
 vm_t* init_js(void) {
-	vm_t* vm = vm_new(js_compile, 1024, 0);
+	vm_t* vm = vm_new(js_compile, VAR_CACHE_MAX_DEF, LOAD_NCACHE_MAX_DEF);
 	vm_init(vm, reg_all_natives, NULL);
 	reg_mariox_natives(vm);
 	return vm;
@@ -52,10 +52,6 @@ bool load_wjs(vm_t* vm, const char* fname) {
 	return res;
 }
 
-void quit_js(vm_t* vm) {
-	vm_close(vm);
-}
-
 #ifdef __cplusplus /* __cplusplus */
 }
 #endif
@@ -69,11 +65,10 @@ using namespace Ewok;
 static void onMenuItemFunc(MenuItem* it, void* data) {
 	(void)it;
 	(void)data;
-	// 完全忽略事件，直到 VM 准备就绪
 	if(!_vm_ready || _vm == NULL) {
 		return;
 	}
-	
+
 	vm_t* vm = _vm;
 	klog("onMenuItemFunc: %d\n", it->id);
 	var_t* ret = call_m_func_by_name(_vm, NULL, "_onMenuItemEvent", 1, var_new_int(vm, it->id));
@@ -89,22 +84,18 @@ extern "C" {
 static void onEventFunc(Widget* wd, xevent_t* xev, void* arg) {
 	klog("onEventFunc: 0x%x, 0x%x\n", wd, arg);
 	(void)arg;
-	// 完全忽略事件，直到 VM 准备就绪
 	if(!_vm_ready || _vm == NULL) {
 		return;
 	}
 
-	// 验证事件指针有效性
 	if(xev == NULL) {
 		return;
 	}
 
-	// 验证事件类型有效性，防止非法事件类型导致崩溃
 	if(xev->type >= XEVT_WIN) {
 		return;
 	}
 
-	// 验证 Widget 指针有效性，防止使用无效的 Widget 指针导致崩溃
 	if(wd == NULL) {
 		return;
 	}
@@ -149,7 +140,6 @@ static int doargs(int argc, char* argv[]) {
 
 		switch (c) {
 		case 'd':
-			// debug mode
 			break;
 		case '?':
 			return -1;
@@ -165,10 +155,10 @@ static bool loadWJS(const string& wjs_fname, string& layout_fname, string& js_fn
     json_var_t* conf_var = json_parse_file(wjs_fname.c_str());
     if(conf_var == NULL)
         return false;
-	
+
 	layout_fname = json_get_str(conf_var, "layout");
 	js_fname = json_get_str(conf_var, "js");
-    
+
     json_var_unref(conf_var);
     return true;
 }
@@ -212,14 +202,12 @@ int main(int argc, char** argv) {
 	LayoutWidget* layout = win.getLayoutWidget();
 	klog("1 layout: 0x%x\n", layout);
 
-	// 步骤 1：初始化 VM
 	_vm = init_js();
 	if(_vm == NULL) {
 		slog("Failed to initialize VM\n");
 		return -1;
 	}
 
-	// 步骤 2：注册 natives 和加载 JS
 	reg_native_wjs(_vm, layout);
 	if(!load_wjs(_vm, js_fname.c_str())) {
 		slog("Failed to load JS file: %s\n", js_fname.c_str());
@@ -227,21 +215,18 @@ int main(int argc, char** argv) {
 	}
 	vm_run(_vm);
 
-	// 步骤 3：标记 VM 准备就绪
 	_vm_ready = true;
 
-	// 步骤 4：现在才设置事件回调
 	klog("2 layout: 0x%x\n", layout);
 	layout->setMenuItemFunc(onMenuItemFunc);
 	layout->setEventFunc(onEventFunc);
 	klog("3 layout: 0x%x\n", layout);
 
-	// 步骤 5：加载配置和打开窗口
-	win.loadConfig(layout_fname.c_str()); // 加载布局文件
+	win.loadConfig(layout_fname.c_str());
 	win.open(&x, -1, -1, -1, 0, 0, argv[1], XWIN_STYLE_NORMAL);
 	win.setTimer(16);
 
-	widgetXRun(&x, &win);	
+	widgetXRun(&x, &win);
 	quit_js(_vm);
 	return 0;
 }

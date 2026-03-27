@@ -1,5 +1,7 @@
 function _onWidgetEvent(widget, event) {
-    /*if(event.type != XEvent.MOUSE || event.state == XEvent.MOUSE_MOVE)
+    console.log("onWidgetEvent: " + widget + " " + event);
+    return 0;
+    if(event.type != XEvent.MOUSE || event.state == XEvent.MOUSE_MOVE)
         return;
 
     var image1 = WJS.getWidgetByName("image1");
@@ -19,9 +21,8 @@ function _onWidgetEvent(widget, event) {
             image2.set("file", "/usr/system/images/logos/apple.png");
         }
     }
-        */
 }
 
 function _onMenuItemEvent(menuID) {
-    //console.log("menuID: " + menuID);
+    console.log("menuID: " + menuID);
 }
