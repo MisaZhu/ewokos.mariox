@@ -51,7 +51,7 @@ HEADS = \
 CFLAGS += $(HEADS)
 CXXFLAGS += $(HEADS)
 
-TARGET_DIR = $(SW_ROOT_DIR)/build/$(HW)/bin
+TARGET_DIR = $(SYS_DIR)/build/$(HW)/rootfs/bin
 WJS = $(TARGET_DIR)/x/wjs
 MARIO = $(TARGET_DIR)/mario
 
