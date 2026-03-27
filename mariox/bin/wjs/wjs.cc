@@ -5,12 +5,10 @@
 #include <x++/X.h>
 #include <unistd.h>
 #include <stdlib.h>
-
 #include <tinyjson/tinyjson.h>
 
 #include "js.h"
 #include "mbc.h"
-#include "native_UniObject.h"
 
 /**
 load extra native libs.
@@ -70,7 +68,6 @@ static void onMenuItemFunc(MenuItem* it, void* data) {
 	}
 
 	vm_t* vm = _vm;
-	klog("onMenuItemFunc: %d\n", it->id);
 	var_t* ret = call_m_func_by_name(_vm, NULL, "_onMenuItemEvent", 1, var_new_int(vm, it->id));
 	if(ret != NULL) {
 		var_unref(ret);
@@ -82,24 +79,9 @@ extern "C" {
 #endif
 
 static void onEventFunc(Widget* wd, xevent_t* xev, void* arg) {
-	klog("onEventFunc: 0x%x, 0x%x\n", wd, arg);
 	(void)arg;
-	if(!_vm_ready || _vm == NULL) {
+	if(!_vm_ready || _vm == NULL || wd == NULL)
 		return;
-	}
-
-	if(xev == NULL) {
-		return;
-	}
-
-	if(xev->type >= XEVT_WIN) {
-		return;
-	}
-
-	if(wd == NULL) {
-		return;
-	}
-
 	vm_t* vm = _vm;
 
 	var_t* evt_arg = var_new_obj(vm, NULL, NULL, NULL);
@@ -122,9 +104,8 @@ static void onEventFunc(Widget* wd, xevent_t* xev, void* arg) {
 	var_wd->free_func = free_none;
 
 	var_t* ret = call_m_func_by_name(_vm, NULL, "_onWidgetEvent", 2, var_wd, evt_arg);
-	if(ret != NULL) {
+	if(ret != NULL)
 		var_unref(ret);
-	}
 }
 
 #ifdef __cplusplus /* __cplusplus */
@@ -164,7 +145,7 @@ static bool loadWJS(const string& wjs_fname, string& layout_fname, string& js_fn
 }
 
 static void out(const char* str) {
-    slog("%s", str);
+    sout(str);
 }
 
 void platform_init(void) {
@@ -200,7 +181,6 @@ int main(int argc, char** argv) {
 	X x;
 	LayoutWin win;
 	LayoutWidget* layout = win.getLayoutWidget();
-	klog("1 layout: 0x%x\n", layout);
 
 	_vm = init_js();
 	if(_vm == NULL) {
@@ -217,10 +197,8 @@ int main(int argc, char** argv) {
 
 	_vm_ready = true;
 
-	klog("2 layout: 0x%x\n", layout);
 	layout->setMenuItemFunc(onMenuItemFunc);
 	layout->setEventFunc(onEventFunc);
-	klog("3 layout: 0x%x\n", layout);
 
 	win.loadConfig(layout_fname.c_str());
 	win.open(&x, -1, -1, -1, 0, 0, argv[1], XWIN_STYLE_NORMAL);

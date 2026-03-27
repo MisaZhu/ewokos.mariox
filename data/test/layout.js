@@ -1,6 +1,4 @@
 function _onWidgetEvent(widget, event) {
-    console.log("onWidgetEvent: " + widget + " " + event);
-    return 0;
     if(event.type != XEvent.MOUSE || event.state == XEvent.MOUSE_MOVE)
         return;
 
