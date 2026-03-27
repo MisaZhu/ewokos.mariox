@@ -1,5 +1,5 @@
 SW_ROOT_DIR=..
-SYS_DIR=$(SW_ROOT_DIR)/../system
+SYS_DIR=$(EWOKOS_ROOT_DIR)/system
 include $(SW_ROOT_DIR)/make.inc
 
 BUILD_DIR = $(SYS_DIR)/build/$(HW)

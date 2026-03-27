@@ -1,3 +1,6 @@
+ifeq ($(ewokos),)
+$(error ewokos dir must set ewokos=[dir])
+endif
 
 all: 
 	mkdir -p build
