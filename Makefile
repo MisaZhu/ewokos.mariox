@@ -1,5 +1,5 @@
 ifeq ($(ewokos),)
-$(error ewokos dir must set ewokos=[dir])
+ewokos=../ewokos
 endif
 
 ifeq ($(ARCH),)
