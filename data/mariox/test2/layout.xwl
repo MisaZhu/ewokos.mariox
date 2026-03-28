@@ -33,7 +33,7 @@
                     "name": "image",
                     "type": "Image",
                     "id": 100,
-                    "file": "/data/images/mac.png"
+                    "file": "apple_ad.png"
                 },
                 {
                     "type": "Splitter",

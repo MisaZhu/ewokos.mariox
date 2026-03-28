@@ -137,8 +137,9 @@ static bool loadWJS(const string& wjs_fname, string& layout_fname, string& js_fn
     if(conf_var == NULL)
         return false;
 
-	layout_fname = json_get_str(conf_var, "layout");
-	js_fname = json_get_str(conf_var, "js");
+	char str[FILENAME_MAX] = {0};
+	layout_fname = vfs_full_file_name(json_get_str(conf_var, "layout"), wjs_fname.c_str(), str, FILENAME_MAX);
+	js_fname = vfs_full_file_name(json_get_str(conf_var, "js"), wjs_fname.c_str(), str, FILENAME_MAX);
 
     json_var_unref(conf_var);
     return true;

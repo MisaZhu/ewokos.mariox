@@ -20,7 +20,3 @@ function _onWidgetEvent(widget, event) {
         }
     }
 }
-
-function _onMenuItemEvent(menuID) {
-    console.log("menuID: " + menuID);
-}
