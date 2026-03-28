@@ -29,7 +29,7 @@
                 {
                     "name": "image1",
                     "type": "Image",
-                    "file": "/usr/system/icons/apple.png"
+                    "file": "apple.png"
                 },
                 {
                     "type": "Splitter",
@@ -39,7 +39,7 @@
                 {
                     "name": "image2",
                     "type": "Image",
-                    "file": "/usr/system/images/logos/apple_old.png"
+                    "file": "apple_ad.png"
                 }
             ]
         }

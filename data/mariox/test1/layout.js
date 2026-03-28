@@ -11,12 +11,12 @@ function _onWidgetEvent(widget, event) {
         widget.set("label", "up");
     else if( event.state == XEvent.MOUSE_CLICK) {
         if(widget.get("name") == "button1") {
-            image1.set("file", "/usr/system/images/logos/apple.png");
-            image2.set("file", "/usr/system/images/logos/apple_old.png");
+            image1.set("file", "apple.png");
+            image2.set("file", "apple_ad.png");
         }
         else if(widget.get("name") == "button2") {
-            image1.set("file", "/usr/system/images/logos/apple_old.png");
-            image2.set("file", "/usr/system/images/logos/apple.png");
+            image1.set("file", "apple_ad.png");
+            image2.set("file", "apple.png");
         }
     }
 }
